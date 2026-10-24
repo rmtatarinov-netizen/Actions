@@ -38,7 +38,7 @@ services:
     image: ghcr.io/rmtatarinov-netizen/actions:local-compose
     container_name: fastapi-time
     ports:
-      - "8080:8000"
+      - "8100:8000"
     environment:
       - LOKI_PUSH_URL=http://loki:3100/loki/api/v1/push
       - APP_NAME=my_app
