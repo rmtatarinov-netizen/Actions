@@ -50,3 +50,8 @@ uvicorn main:app --reload
 Автоматическая документация доступна по адресам:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
+
+## Деплой
+
+Инструкция по сборке образа и автоматическому деплою через GitHub Actions:
+[Deployment.md](Deployment.md).

@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+    networks:
+      - logging
+
+  grafana:
+    image: grafana/grafana:10.4.5
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - logging
+
+  app:
+    build: .
+    image: ghcr.io/rmtatarinov-netizen/actions:local-compose
+    container_name: fastapi-time
+    ports:
+      - "8000:8000"
+    environment:
+      - LOKI_PUSH_URL=http://loki:3100/loki/api/v1/push
+      - APP_NAME=my_app
+      - LOG_LEVEL=info
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - logging
+
+networks:
+  logging:
+    driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:
