@@ -13,7 +13,6 @@ permissions:
 env:
   REGISTRY: ghcr.io
   CONTAINER_NAME: fastapi-time
-  DEPLOY_PATH: ~/app-stack
 
 jobs:
   build-and-push:
@@ -84,7 +83,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
           source: "docker-compose.yml,loki-config.yaml,grafana/"
-          target: ${{ env.DEPLOY_PATH }}
+          target: app-stack
           strip_components: 0
           overwrite: true
 
@@ -95,17 +94,25 @@ jobs:
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
-          DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
-          envs: IMAGE,GHCR_USER,GHCR_TOKEN,CONTAINER_NAME,DEPLOY_PATH
+          envs: IMAGE,GHCR_USER,GHCR_TOKEN,CONTAINER_NAME
           script: |
             set -e
-            mkdir -p "$DEPLOY_PATH"
-            cd "$DEPLOY_PATH"
+            APP_DIR="$HOME/app-stack"
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
+            echo "PWD=$(pwd)"
+            ls -la
+
+            if [ ! -f docker-compose.yml ]; then
+              echo "ERROR: docker-compose.yml not found in $APP_DIR"
+              find $HOME -maxdepth 3 -name 'docker-compose.yml' 2>&1 | head -15
+              exit 1
+            fi
 
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
@@ -116,11 +123,11 @@ jobs:
               sed -i "s|image: ghcr.io/rmtatarinov-netizen/actions:local-compose|image: ${IMAGE}|g" docker-compose.yml
             fi
 
-            docker compose pull loki grafana || true
+            docker compose pull loki grafana 2>/dev/null || true
             docker compose pull app 2>/dev/null || true
             docker compose up -d
 
             docker image prune -f
             docker logout ghcr.io
 
-            docker ps
+            docker ps | grep -E 'loki|grafana|fastapi-time'
