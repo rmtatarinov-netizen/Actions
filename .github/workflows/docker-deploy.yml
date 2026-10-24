@@ -75,6 +75,16 @@ jobs:
           done
           exit $missing
 
+      - name: Create app-stack dir on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          script: |
+            mkdir -p ~/app-stack
+
       - name: Copy stack files to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -83,7 +93,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
           source: "docker-compose.yml,loki-config.yaml,grafana/"
-          target: app-stack
+          target: "~/app-stack"
           strip_components: 0
           overwrite: true
 
@@ -103,14 +113,12 @@ jobs:
           script: |
             set -e
             APP_DIR="$HOME/app-stack"
-            mkdir -p "$APP_DIR"
             cd "$APP_DIR"
             echo "PWD=$(pwd)"
-            ls -la
+            ls -laR | head -80
 
             if [ ! -f docker-compose.yml ]; then
               echo "ERROR: docker-compose.yml not found in $APP_DIR"
-              find $HOME -maxdepth 3 -name 'docker-compose.yml' 2>&1 | head -15
               exit 1
             fi
 
