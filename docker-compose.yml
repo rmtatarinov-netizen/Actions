@@ -8,8 +8,6 @@ services:
     volumes:
       - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
       - loki-data:/loki
-    ports:
-      - "3100:3100"
     restart: unless-stopped
     networks:
       - logging
@@ -18,7 +16,7 @@ services:
     image: grafana/grafana:10.4.5
     container_name: grafana
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
@@ -38,7 +36,7 @@ services:
     image: ghcr.io/rmtatarinov-netizen/actions:local-compose
     container_name: fastapi-time
     ports:
-      - "8100:8000"
+      - "8101:8000"
     environment:
       - LOKI_PUSH_URL=http://loki:3100/loki/api/v1/push
       - APP_NAME=my_app
